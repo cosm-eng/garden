@@ -24,6 +24,7 @@ import { flatten } from "lodash"
 import { BuildTask } from "../tasks/build"
 import { StringsParameter, BooleanParameter } from "../cli/params"
 import { Garden } from "../garden"
+import { emitStackGraphEvent } from "./helpers"
 
 const buildArgs = {
   modules: new StringsParameter({
@@ -90,6 +91,7 @@ export class BuildCommand extends Command<Args, Opts> {
 
   async action({
     garden,
+    isWorkflowStepCommand,
     log,
     footerLog,
     args,
@@ -104,6 +106,9 @@ export class BuildCommand extends Command<Args, Opts> {
     await garden.clearBuilds()
 
     const graph = await garden.getConfigGraph(log)
+    if (!isWorkflowStepCommand) {
+      emitStackGraphEvent(garden, graph)
+    }
     const modules = graph.getModules({ names: args.modules })
     const moduleNames = modules.map((m) => m.name)
 

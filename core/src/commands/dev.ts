@@ -22,7 +22,7 @@ import { processModules } from "../process"
 import { GardenModule } from "../types/module"
 import { getTestTasks } from "../tasks/test"
 import { ConfigGraph } from "../config-graph"
-import { getHotReloadServiceNames, validateHotReloadServiceNames } from "./helpers"
+import { emitStackGraphEvent, getHotReloadServiceNames, validateHotReloadServiceNames } from "./helpers"
 import { startServer } from "../server/server"
 import { BuildTask } from "../tasks/build"
 import { DeployTask } from "../tasks/deploy"
@@ -117,6 +117,7 @@ export class DevCommand extends Command<DevCommandArgs, DevCommandOpts> {
 
   async action({
     garden,
+    isWorkflowStepCommand,
     log,
     footerLog,
     args,
@@ -126,6 +127,9 @@ export class DevCommand extends Command<DevCommandArgs, DevCommandOpts> {
     this.server?.setGarden(garden)
 
     const graph = await garden.getConfigGraph(log)
+    if (!isWorkflowStepCommand) {
+      emitStackGraphEvent(garden, graph)
+    }
     const modules = graph.getModules()
 
     const skipTests = opts["skip-tests"]

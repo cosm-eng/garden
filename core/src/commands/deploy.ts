@@ -22,7 +22,7 @@ import { getModuleWatchTasks } from "../tasks/helpers"
 import { processModules } from "../process"
 import { printHeader } from "../logger/util"
 import { BaseTask } from "../tasks/base"
-import { getDevModeServiceNames, getHotReloadServiceNames, validateHotReloadServiceNames } from "./helpers"
+import { emitStackGraphEvent, getDevModeServiceNames, getHotReloadServiceNames, validateHotReloadServiceNames } from "./helpers"
 import { startServer } from "../server/server"
 import { DeployTask } from "../tasks/deploy"
 import { naturalList } from "../util/string"
@@ -127,6 +127,7 @@ export class DeployCommand extends Command<Args, Opts> {
 
   async action({
     garden,
+    isWorkflowStepCommand,
     log,
     footerLog,
     args,
@@ -139,6 +140,9 @@ export class DeployCommand extends Command<Args, Opts> {
     }
 
     const initGraph = await garden.getConfigGraph(log)
+    if (!isWorkflowStepCommand) {
+      emitStackGraphEvent(garden, initGraph)
+    }
     let services = initGraph.getServices({ names: args.services, includeDisabled: true })
 
     const disabled = services.filter((s) => s.disabled).map((s) => s.name)

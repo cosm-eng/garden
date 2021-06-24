@@ -362,6 +362,19 @@ export class ActionRouter implements TypeGuard {
   }
 
   async build<T extends GardenModule>(params: ModuleActionRouterParams<BuildModuleParams<T>>): Promise<BuildResult> {
+    params.events = params.events || new PluginEventBroker()
+
+    params.events.on("log", ({ timestamp, data }) => {
+      this.garden.events.emit("log", {
+        timestamp,
+        entity: {
+          type: "build",
+          key: `${params.module.name}`,
+        },
+        data: data.toString(),
+      })
+    })
+
     return this.callModuleHandler({
       params,
       actionType: "build",
@@ -701,9 +714,7 @@ export class ActionRouter implements TypeGuard {
   /**
    * Deletes all or specified services in the environment.
    */
-  async deleteServices(log: LogEntry, names?: string[]) {
-    const graph = await this.garden.getConfigGraph(log)
-
+  async deleteServices(graph: ConfigGraph, log: LogEntry, names?: string[]) {
     const servicesLog = log.info({ msg: chalk.white("Deleting services..."), status: "active" })
 
     const services = graph.getServices({ names })

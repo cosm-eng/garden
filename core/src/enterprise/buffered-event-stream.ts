@@ -6,6 +6,21 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+/**
+ * Task log event control flow
+ * 1. plugin handler emits log event on plugin event broker
+ * 2. action listens to log events from plugin event broker, augments with more data and passes it along to garden.events
+ * 3. BufferedEventStream sends along to Garden Cloud
+ *
+ * Plugin handler control flow
+ * 1. command.action calls garden.processTasks([task list]), which adds tasks to the task graph and waits
+ * 2. Tasks and their dependencies are added to task graph
+ * 3. Task graph concurrently processes tasks in dependency order
+ * 4. Task calls action via action router
+ * 5. Action router calls plugin handler
+ * 6. Plugin handler does the actual work and returns a result
+ */
+
 import Bluebird from "bluebird"
 import { omit } from "lodash"
 

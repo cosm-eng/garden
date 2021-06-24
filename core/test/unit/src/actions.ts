@@ -39,6 +39,7 @@ import { join } from "path"
 import { DashboardPage } from "../../../src/types/plugin/provider/getDashboardPage"
 import { testFromModule, testFromConfig } from "../../../src/types/test"
 import { ConfigGraph } from "../../../src/config-graph"
+import { cleanForJSON } from "../../../src/logger/renderers"
 
 const now = new Date()
 

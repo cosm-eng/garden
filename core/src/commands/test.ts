@@ -27,6 +27,7 @@ import { startServer } from "../server/server"
 import { StringsParameter, BooleanParameter } from "../cli/params"
 import { deline } from "../util/string"
 import { Garden } from "../garden"
+import { emitStackGraphEvent } from "./helpers"
 
 export const testArgs = {
   modules: new StringsParameter({
@@ -119,6 +120,7 @@ export class TestCommand extends Command<Args, Opts> {
 
   async action({
     garden,
+    isWorkflowStepCommand,
     log,
     footerLog,
     args,
@@ -131,6 +133,9 @@ export class TestCommand extends Command<Args, Opts> {
     }
 
     const graph = await garden.getConfigGraph(log)
+    if (!isWorkflowStepCommand) {
+      emitStackGraphEvent(garden, graph)
+    }
     const skipDependants = opts["skip-dependants"]
     let modules: GardenModule[]
 

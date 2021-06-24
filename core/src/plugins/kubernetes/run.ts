@@ -766,9 +766,9 @@ export class PodRunner extends PodRunnerParams {
     const mainContainerName = this.getMainContainerName()
 
     if (tty) {
-      if (stdout || stderr || stdin) {
-        throw new ParameterError(`Cannot set both tty and stdout/stderr/stdin streams`, { params })
-      }
+      // if (stdout || stderr || stdin) {
+      //   throw new ParameterError(`Cannot set both tty and stdout/stderr/stdin streams`, { params })
+      // }
 
       stdout = process.stdout
       stderr = process.stderr

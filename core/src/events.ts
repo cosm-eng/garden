@@ -14,6 +14,7 @@ import { ServiceStatus } from "./types/service"
 import { NamespaceStatus, RunStatus } from "./types/plugin/base"
 import { Omit } from "./util/util"
 import { AuthTokenResponse } from "./enterprise/api"
+import { RenderedActionGraph } from "./config-graph"
 
 export type GardenEventListener<T extends EventName> = (payload: Events[T]) => void
 
@@ -113,6 +114,9 @@ export interface Events extends LoggerEvents {
     pathsChanged: string[]
   }
   moduleRemoved: {}
+
+  // Stack Graph events
+  stackGraph: RenderedActionGraph
 
   // TaskGraph events
   taskPending: {
