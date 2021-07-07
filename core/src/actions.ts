@@ -32,7 +32,7 @@ import {
   RunResult,
   runStatus,
 } from "./types/plugin/base"
-import { BuildModuleParams, BuildResult } from "./types/plugin/module/build"
+import { BuildModuleParams, BuildResult, BuildState } from "./types/plugin/module/build"
 import { BuildStatus, GetBuildStatusParams } from "./types/plugin/module/getBuildStatus"
 import { GetTestResultParams, TestResult } from "./types/plugin/module/getTestResult"
 import { RunModuleParams } from "./types/plugin/module/runModule"
@@ -354,19 +354,53 @@ export class ActionRouter implements TypeGuard {
   async getBuildStatus<T extends GardenModule>(
     params: ModuleActionRouterParams<GetBuildStatusParams<T>>
   ): Promise<BuildStatus> {
-    return this.callModuleHandler({
+    const status = await this.callModuleHandler({
       params,
       actionType: "getBuildStatus",
       defaultHandler: async () => ({ ready: false }),
     })
+    if (status.ready) {
+      // Then an actual build won't take place, so we emit a build status event to that effect.
+      this.garden.events.emit("buildStatus", {
+        moduleName: params.module.name,
+        status: { state: "fetched" },
+      })
+    }
+    return status
   }
 
   async build<T extends GardenModule>(params: ModuleActionRouterParams<BuildModuleParams<T>>): Promise<BuildResult> {
-    return this.callModuleHandler({
-      params,
-      actionType: "build",
-      defaultHandler: async () => ({}),
+    let result: BuildResult
+    const startedAt = new Date()
+    const moduleName = params.module.name
+    this.garden.events.emit("buildStatus", {
+      moduleName,
+      status: { state: "building", startedAt },
     })
+
+    const emitBuildStatusEvent = (state: BuildState) => {
+      this.garden.events.emit("buildStatus", {
+        moduleName,
+        status: {
+          state,
+          startedAt,
+          completedAt: new Date(),
+        },
+      })
+    }
+
+    try {
+      result = await this.callModuleHandler({
+        params,
+        actionType: "build",
+        defaultHandler: async () => ({}),
+      })
+      emitBuildStatusEvent("built")
+    } catch (err) {
+      emitBuildStatusEvent("error")
+      throw err
+    }
+    return result
   }
 
   async publishModule<T extends GardenModule>(
@@ -386,12 +420,19 @@ export class ActionRouter implements TypeGuard {
   ): Promise<TestResult> {
     const tmpDir = await tmp.dir({ unsafeCleanup: true })
     const artifactsPath = normalizePath(await realpath(tmpDir.path))
+    const testName = params.test.name
+    const moduleName = params.module.name
+    this.garden.events.emit("testStatus", {
+      testName,
+      moduleName,
+      status: { state: "running", startedAt: new Date() },
+    })
 
     try {
       const result = await this.callModuleHandler({ params: { ...params, artifactsPath }, actionType: "testModule" })
       this.garden.events.emit("testStatus", {
-        testName: params.test.name,
-        moduleName: params.module.name,
+        testName,
+        moduleName,
         status: runStatus(result),
       })
       this.emitNamespaceEvent(result.namespaceStatus)
@@ -444,6 +485,10 @@ export class ActionRouter implements TypeGuard {
   }
 
   async deployService(params: ServiceActionRouterParams<DeployServiceParams>): Promise<ServiceStatus> {
+    this.garden.events.emit("serviceStatus", {
+      serviceName: params.service.name,
+      status: { state: "deploying" },
+    })
     const { result } = await this.callServiceHandler({ params, actionType: "deployService" })
     this.garden.events.emit("serviceStatus", {
       serviceName: params.service.name,
@@ -552,13 +597,15 @@ export class ActionRouter implements TypeGuard {
   async runTask(params: TaskActionRouterParams<Omit<RunTaskParams, "artifactsPath">>): Promise<RunTaskResult> {
     const tmpDir = await tmp.dir({ unsafeCleanup: true })
     const artifactsPath = normalizePath(await realpath(tmpDir.path))
+    const taskName = params.task.name
+    this.garden.events.emit("taskStatus", {
+      taskName,
+      status: { state: "running", startedAt: new Date() },
+    })
 
     try {
       const { result } = await this.callTaskHandler({ params: { ...params, artifactsPath }, actionType: "runTask" })
-      this.garden.events.emit("taskStatus", {
-        taskName: params.task.name,
-        status: runStatus(result),
-      })
+      this.garden.events.emit("taskStatus", { taskName, status: runStatus(result) })
       result && this.validateTaskOutputs(params.task, result)
       this.emitNamespaceEvent(result.namespaceStatus)
       return result

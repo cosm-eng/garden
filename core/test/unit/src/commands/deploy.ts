@@ -212,17 +212,23 @@ describe("DeployCommand", () => {
     )
 
     expect(sortedEvents).to.eql([
+      { name: "serviceStatus", payload: { serviceName: "service-a", status: { state: "deploying" } } },
       { name: "serviceStatus", payload: { serviceName: "service-a", status: { state: "ready" } } },
       { name: "serviceStatus", payload: { serviceName: "service-a", status: { state: "ready" } } },
+      { name: "serviceStatus", payload: { serviceName: "service-b", status: { state: "deploying" } } },
       { name: "serviceStatus", payload: { serviceName: "service-b", status: { state: "ready" } } },
       { name: "serviceStatus", payload: { serviceName: "service-b", status: { state: "unknown" } } },
+      { name: "serviceStatus", payload: { serviceName: "service-c", status: { state: "deploying" } } },
       { name: "serviceStatus", payload: { serviceName: "service-c", status: { state: "ready" } } },
       { name: "serviceStatus", payload: { serviceName: "service-c", status: { state: "ready" } } },
+      { name: "serviceStatus", payload: { serviceName: "service-d", status: { state: "deploying" } } },
       { name: "serviceStatus", payload: { serviceName: "service-d", status: { state: "ready" } } },
       { name: "serviceStatus", payload: { serviceName: "service-d", status: { state: "unknown" } } },
       { name: "taskStatus", payload: { taskName: "task-a", status: { state: "not-implemented" } } },
+      { name: "taskStatus", payload: { taskName: "task-a", status: { state: "running" } } },
       { name: "taskStatus", payload: { taskName: "task-a", status: { state: "succeeded" } } },
       { name: "taskStatus", payload: { taskName: "task-c", status: { state: "not-implemented" } } },
+      { name: "taskStatus", payload: { taskName: "task-c", status: { state: "running" } } },
       { name: "taskStatus", payload: { taskName: "task-c", status: { state: "succeeded" } } },
     ])
   })

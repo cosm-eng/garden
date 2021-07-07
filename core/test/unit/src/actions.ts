@@ -274,12 +274,37 @@ describe("ActionRouter", () => {
           ready: true,
         })
       })
+
+      it("should emit a buildStatus event", async () => {
+        garden.events.eventLog = []
+        await actions.getBuildStatus({ log, module })
+        const event = garden.events.eventLog[0]
+        expect(event).to.exist
+        expect(event.name).to.eql("buildStatus")
+        expect(event.payload.moduleName).to.eql("module-a")
+        expect(event.payload.status.state).to.eql("fetched")
+      })
     })
 
     describe("build", () => {
       it("should correctly call the corresponding plugin handler", async () => {
         const result = await actions.build({ log, module })
         expect(result).to.eql({})
+      })
+
+      it("should emit buildStatus events", async () => {
+        garden.events.eventLog = []
+        await actions.build({ log, module })
+        const event1 = garden.events.eventLog[0]
+        const event2 = garden.events.eventLog[1]
+        expect(event1).to.exist
+        expect(event1.name).to.eql("buildStatus")
+        expect(event1.payload.moduleName).to.eql("module-a")
+        expect(event1.payload.status.state).to.eql("building")
+        expect(event2).to.exist
+        expect(event2.name).to.eql("buildStatus")
+        expect(event2.payload.moduleName).to.eql("module-a")
+        expect(event2.payload.status.state).to.eql("built")
       })
     })
 
@@ -361,7 +386,7 @@ describe("ActionRouter", () => {
         })
       })
 
-      it("should emit a testStatus event", async () => {
+      it("should emit testStatus events", async () => {
         garden.events.eventLog = []
         await actions.testModule({
           log,
@@ -384,12 +409,18 @@ describe("ActionRouter", () => {
             graph
           ),
         })
-        const event = garden.events.eventLog[0]
-        expect(event).to.exist
-        expect(event.name).to.eql("testStatus")
-        expect(event.payload.testName).to.eql("test")
-        expect(event.payload.moduleName).to.eql("module-a")
-        expect(event.payload.status.state).to.eql("succeeded")
+        const event1 = garden.events.eventLog[0]
+        const event2 = garden.events.eventLog[1]
+        expect(event1).to.exist
+        expect(event1.name).to.eql("testStatus")
+        expect(event1.payload.testName).to.eql("test")
+        expect(event1.payload.moduleName).to.eql("module-a")
+        expect(event1.payload.status.state).to.eql("running")
+        expect(event2).to.exist
+        expect(event2.name).to.eql("testStatus")
+        expect(event2.payload.testName).to.eql("test")
+        expect(event2.payload.moduleName).to.eql("module-a")
+        expect(event2.payload.status.state).to.eql("succeeded")
       })
 
       it("should copy artifacts exported by the handler to the artifacts directory", async () => {
@@ -551,14 +582,19 @@ describe("ActionRouter", () => {
         expect(result).to.eql({ forwardablePorts: [], state: "ready", detail: {}, outputs: { base: "ok", foo: "ok" } })
       })
 
-      it("should emit a serviceStatus event", async () => {
+      it("should emit serviceStatus events", async () => {
         garden.events.eventLog = []
         await actions.deployService({ log, service, runtimeContext, force: true, devMode: false, hotReload: false })
-        const event = garden.events.eventLog[0]
-        expect(event).to.exist
-        expect(event.name).to.eql("serviceStatus")
-        expect(event.payload.serviceName).to.eql("service-a")
-        expect(event.payload.status.state).to.eql("ready")
+        const event1 = garden.events.eventLog[0]
+        const event2 = garden.events.eventLog[1]
+        expect(event1).to.exist
+        expect(event1.name).to.eql("serviceStatus")
+        expect(event1.payload.serviceName).to.eql("service-a")
+        expect(event1.payload.status.state).to.eql("deploying")
+        expect(event2).to.exist
+        expect(event2.name).to.eql("serviceStatus")
+        expect(event2.payload.serviceName).to.eql("service-a")
+        expect(event2.payload.status.state).to.eql("ready")
       })
 
       it("should throw if the outputs don't match the service outputs schema of the plugin", async () => {
@@ -727,7 +763,7 @@ describe("ActionRouter", () => {
         expect(result).to.eql(taskResult)
       })
 
-      it("should emit a taskStatus event", async () => {
+      it("should emit taskStatus events", async () => {
         garden.events.eventLog = []
         await actions.runTask({
           log,
@@ -738,11 +774,16 @@ describe("ActionRouter", () => {
             dependencies: [],
           },
         })
-        const event = garden.events.eventLog[0]
-        expect(event).to.exist
-        expect(event.name).to.eql("taskStatus")
-        expect(event.payload.taskName).to.eql("task-a")
-        expect(event.payload.status.state).to.eql("succeeded")
+        const event1 = garden.events.eventLog[0]
+        const event2 = garden.events.eventLog[1]
+        expect(event1).to.exist
+        expect(event1.name).to.eql("taskStatus")
+        expect(event1.payload.taskName).to.eql("task-a")
+        expect(event1.payload.status.state).to.eql("running")
+        expect(event2).to.exist
+        expect(event2.name).to.eql("taskStatus")
+        expect(event2.payload.taskName).to.eql("task-a")
+        expect(event2.payload.status.state).to.eql("succeeded")
       })
 
       it("should throw if the outputs don't match the task outputs schema of the plugin", async () => {

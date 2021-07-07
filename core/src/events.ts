@@ -14,6 +14,7 @@ import { ServiceStatus } from "./types/service"
 import { NamespaceStatus, RunStatus } from "./types/plugin/base"
 import { Omit } from "./util/util"
 import { AuthTokenResponse } from "./enterprise/api"
+import { BuildState } from "./types/plugin/module/build"
 
 export type GardenEventListener<T extends EventName> = (payload: Events[T]) => void
 
@@ -147,7 +148,15 @@ export interface Events extends LoggerEvents {
   }
   watchingForChanges: {}
 
-  // Runtime status events
+  // Status events
+  buildStatus: {
+    moduleName: string
+    status: {
+      state: BuildState
+      startedAt?: Date
+      completedAt?: Date
+    }
+  }
   taskStatus: {
     taskName: string
     status: RunStatus
@@ -206,6 +215,7 @@ export const eventNames: EventName[] = [
   "taskGraphProcessing",
   "taskGraphComplete",
   "watchingForChanges",
+  "buildStatus",
   "taskStatus",
   "testStatus",
   "serviceStatus",
